@@ -29,7 +29,7 @@ export const CONVERSATION_TABS_LOCALSTORAGE_KEY = `${STORAGE_APP_NAME}.conversat
 export const USER_OVERRIDES_LOCALSTORAGE_KEY = `${STORAGE_APP_NAME}.userOverrides`;
 export const DISMISSED_RECOMMENDED_MCP_SERVERS_LOCALSTORAGE_KEY = `${STORAGE_APP_NAME}.dismissedRecommendedMcpServers`;
 
-export const SNAP_AUTH_TOKEN_LOCALSTORAGE_KEY = 'Snap.auth.accessToken';
+export const SNAP_AUTH_USER_LOCALSTORAGE_KEY = 'Snap.auth.demoUser';
 
 /** Key prefix for per-conversation resumable stream state, conversationId is appended */
 export const STREAM_RESUME_LOCALSTORAGE_KEY_PREFIX = `${STORAGE_APP_NAME}.streamResume.`;

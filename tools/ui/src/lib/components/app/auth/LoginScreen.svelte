@@ -8,7 +8,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { APP_NAME } from '$lib/constants';
+	import { APP_NAME, ROUTES } from '$lib/constants';
 	import { authStore } from '$lib/stores';
 
 	let username = $state('');
@@ -27,7 +27,7 @@
 
 		try {
 			await authStore.login(username.trim(), password);
-			await goto(`${base}/`, { replaceState: true });
+			await goto(`${base}${ROUTES.START}`, { replaceState: true });
 		} catch {
 			localError = authStore.error ?? 'Invalid username or password.';
 		} finally {

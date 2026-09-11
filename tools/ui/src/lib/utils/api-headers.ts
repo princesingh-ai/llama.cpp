@@ -1,7 +1,6 @@
 import { redactValue } from './redact';
 import { CORS_PROXY, HEADERS } from '$lib/constants';
 import { MimeTypeApplication } from '$lib/enums';
-import { authStore } from '$lib/stores/auth.svelte';
 import { settingsStore } from '$lib/stores/settings/index.svelte';
 
 /**
@@ -22,19 +21,6 @@ export function getJsonHeaders(): Record<string, string> {
 	return {
 		[HEADERS.CONTENT_TYPE]: MimeTypeApplication.JSON,
 		...getAuthHeaders()
-	};
-}
-
-export function getSnapAuthHeaders(): Record<string, string> {
-	const token = authStore.token?.trim();
-
-	return token ? { [HEADERS.AUTHORIZATION]: `${HEADERS.BEARER}${token}` } : {};
-}
-
-export function getSnapJsonHeaders(): Record<string, string> {
-	return {
-		[HEADERS.CONTENT_TYPE]: MimeTypeApplication.JSON,
-		...getSnapAuthHeaders()
 	};
 }
 
