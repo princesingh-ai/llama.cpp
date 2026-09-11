@@ -38,6 +38,9 @@ export type {
 	ApiStreamSession
 } from './api';
 
+// Auth types
+export type { SnapAuthLoginResponse, SnapAuthUser } from './auth';
+
 // Chat types
 export type {
 	AttachmentMenuItem,

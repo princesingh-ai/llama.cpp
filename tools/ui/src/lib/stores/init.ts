@@ -1,4 +1,5 @@
 // direct imports, not via the barrel, to avoid circular deps
+import { authStore } from './auth.svelte';
 import { conversationsStore } from './conversations/index.svelte';
 import { permissionsStore } from './permissions.svelte';
 import { settingsStore } from './settings/index.svelte';
@@ -19,6 +20,7 @@ export function initStores(): Promise<void> {
 		settingsStore.initialize();
 		permissionsStore.initialize();
 		toolsStore.initialize();
+		void authStore.initialize();
 		void versionStore.initialize();
 
 		// the full conversation list loads in the background; once it is back,

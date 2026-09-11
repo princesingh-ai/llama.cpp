@@ -5,6 +5,11 @@ export const API_MODELS = {
 	UNLOAD: '/models/unload'
 };
 
+export const API_AUTH = {
+	LOGIN: '/auth/login',
+	ME: '/auth/me'
+};
+
 // chat completion routes, the control route drives realtime inference (e.g. end reasoning)
 export const API_CHAT = {
 	COMPLETIONS: './v1/chat/completions',

@@ -34,6 +34,7 @@ import {
 } from '$lib/enums';
 import { modelsStore } from '$lib/stores/models/index.svelte';
 import { settingsStore } from '$lib/stores/settings/index.svelte';
+import { authStore } from '$lib/stores/auth.svelte';
 import type { DatabaseMessageExtraMcpPrompt, DatabaseMessageExtraMcpResource } from '$lib/types';
 import type {
 	ApiChatCompletionToolCall,
@@ -43,7 +44,7 @@ import type {
 } from '$lib/types/api';
 import { isAbortError } from '$lib/utils/abort';
 import { ApiError } from '$lib/utils/api-fetch';
-import { getAuthHeaders, getJsonHeaders } from '$lib/utils/api-headers';
+import { getAuthHeaders, getJsonHeaders, getSnapJsonHeaders } from '$lib/utils/api-headers';
 import { formatAttachmentText } from '$lib/utils/formatters';
 import { streamIdentity } from '$lib/utils/stream-identity';
 
@@ -869,12 +870,16 @@ export class ChatService {
 		}
 
 		try {
-			await fetch(API_CHAT.COMPLETIONS, {
+			const response = await fetch(API_CHAT.COMPLETIONS, {
 				body: JSON.stringify(requestBody),
-				headers: getJsonHeaders(),
+				headers: getSnapJsonHeaders(),
 				method: 'POST',
 				signal
 			});
+
+			if (response.status === 401) {
+				authStore.handleUnauthorized();
+			}
 		} catch (error) {
 			if (!isAbortError(error)) {
 				console.warn('[ChatService] Pre-encode request failed:', error);
@@ -1218,7 +1223,7 @@ export class ChatService {
 		}
 
 		try {
-			const headers: Record<string, string> = { ...getJsonHeaders() };
+			const headers: Record<string, string> = { ...getSnapJsonHeaders() };
 
 			// tag streaming requests with the conversation id, this single header is the opt in for the
 			// server side replay buffer and powers discoverActiveStream on tab reopen. with an explicit
@@ -1242,6 +1247,10 @@ export class ChatService {
 				// leaves nothing to resume
 				if (conversationId) {
 					ChatService.clearStreamState(conversationId);
+				}
+
+				if (response.status === 401) {
+					authStore.handleUnauthorized();
 				}
 
 				const error = await ChatService.parseErrorResponse(response);
@@ -1344,9 +1353,16 @@ export class ChatService {
 		try {
 			const res = await fetch(API_CHAT.CONTROL, {
 				body: JSON.stringify(body),
-				headers: getJsonHeaders(),
+				headers: getSnapJsonHeaders(),
 				method: 'POST'
 			});
+
+			if (res.status === 401) {
+				authStore.handleUnauthorized();
+
+				return false;
+			}
+
 			const data = await res.json().catch(() => null);
 
 			if (!res.ok || data?.success !== true) {
@@ -1593,7 +1609,10 @@ export class ChatService {
 		try {
 			const errorText = await response.text();
 			const errorData: ApiErrorResponse = JSON.parse(errorText);
-			const message = errorData.error?.message || 'Unknown server error';
+			const message =
+				typeof (errorData as { detail?: unknown }).detail === 'string'
+					? ((errorData as { detail: string }).detail)
+					: errorData.error?.message || 'Unknown server error';
 			const error = new Error(message) as Error & {
 				contextInfo?: { n_prompt_tokens: number; n_ctx: number };
 			};

@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
-	import { SidebarNavigation } from '$lib/components/app';
+	import { LoginScreen, SidebarNavigation } from '$lib/components/app';
 	import { PwaMetaTags, PwaRefreshAlert } from '$lib/components/pwa';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import {
@@ -21,6 +21,7 @@
 	import { RouterService } from '$lib/services/router.service';
 	import {
 		chatStore,
+		authStore,
 		conversationsStore,
 		deviceStore,
 		mcpStore,
@@ -146,7 +147,15 @@
 		navigateToPrevTab: () => navigateToTab(-1)
 	});
 
+	function handleWindowKeydown(event: KeyboardEvent) {
+		if (!authStore.isAuthenticated) return;
+
+		handleKeydown(event);
+	}
+
 	function checkApiKey() {
+		if (!authStore.isAuthenticated) return;
+
 		const apiKey = settingsStore.config.apiKey;
 
 		// Without a stored key there is nothing to re-validate here; the keyless
@@ -182,14 +191,23 @@
 
 	onMount(() => {
 		updateFavicon();
-		// snapshot of every backend running stream on first load, populates the sidebar spinners
-		// so the user sees each conv that has a live inference, even ones not opened yet
-		void chatStore.syncRemoteRunningStreams();
+	});
+
+	$effect(() => {
+		if (!authStore.isAuthenticated) return;
+
+		untrack(() => {
+			// snapshot of every backend running stream on first load, populates the sidebar spinners
+			// so the user sees each conv that has a live inference, even ones not opened yet
+			void chatStore.syncRemoteRunningStreams();
+		});
 	});
 
 	// refresh that snapshot when the tab returns to the foreground, a stream may have advanced
 	// or ended while it was hidden. snapshot only, no polling
 	function handleVisibilityChange() {
+		if (!authStore.isAuthenticated) return;
+
 		if (document.visibilityState !== 'visible') return;
 
 		void chatStore.syncRemoteRunningStreams();
@@ -203,6 +221,8 @@
 
 	// Initialize server properties on app load (run once)
 	$effect(() => {
+		if (!authStore.isAuthenticated) return;
+
 		// Only fetch if we don't already have props
 		if (!serverStore.props) {
 			untrack(() => {
@@ -213,6 +233,8 @@
 
 	// Sync settings when server props are loaded
 	$effect(() => {
+		if (!authStore.isAuthenticated) return;
+
 		const serverProps = serverStore.props;
 
 		if (serverProps) {
@@ -235,6 +257,8 @@
 	let routerModelsFetched = false;
 
 	$effect(() => {
+		if (!authStore.isAuthenticated) return;
+
 		const isRouter = serverStore.isRouterMode;
 		const modelsCount = modelsStore.models.length;
 
@@ -251,6 +275,8 @@
 	// Live model status and load progress via the /models/sse feed (router mode)
 	$effect(() => {
 		if (!browser) return;
+
+		if (!authStore.isAuthenticated) return;
 
 		if (!serverStore.isRouterMode) return;
 
@@ -274,6 +300,8 @@
 	// every other card back through skeleton state.
 	$effect(() => {
 		if (!browser) return;
+
+		if (!authStore.isAuthenticated) return;
 
 		const mcpServers = mcpStore.getServers();
 		const serversWithUrls = mcpServers.filter((s) => s.url.trim());
@@ -310,25 +338,33 @@
 	<PwaMetaTags />
 </svelte:head>
 
-<svelte:window bind:innerHeight bind:innerWidth onkeydown={handleKeydown} />
+<svelte:window bind:innerHeight bind:innerWidth onkeydown={handleWindowKeydown} />
 <svelte:document onvisibilitychange={handleVisibilityChange} />
 
 <Tooltip.Provider delayDuration={TOOLTIP_DELAY_DURATION}>
-	<div class="flex flex-col md:flex-row">
-		<SidebarNavigation
-			onSearchClick={() => {
-				if (deviceStore.isMobile) {
-					goto(ROUTES.SEARCH);
-				} else if (chatSidebar?.activateSearchMode) {
-					chatSidebar.activateSearchMode();
-				}
-			}}
-		/>
+	{#if authStore.isChecking}
+		<main class="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">
+			<span class="shimmer-text">Loading Snap</span>
+		</main>
+	{:else if !authStore.isAuthenticated}
+		<LoginScreen />
+	{:else}
+		<div class="flex flex-col md:flex-row">
+			<SidebarNavigation
+				onSearchClick={() => {
+					if (deviceStore.isMobile) {
+						goto(ROUTES.SEARCH);
+					} else if (chatSidebar?.activateSearchMode) {
+						chatSidebar.activateSearchMode();
+					}
+				}}
+			/>
 
-		<div class="flex-1">
-			{@render children?.()}
+			<div class="flex-1">
+				{@render children?.()}
+			</div>
 		</div>
-	</div>
+	{/if}
 
 	<ModeWatcher />
 

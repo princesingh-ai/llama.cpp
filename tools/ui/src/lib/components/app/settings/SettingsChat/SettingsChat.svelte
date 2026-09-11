@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RefreshCw } from '@lucide/svelte';
+	import { LogOut, RefreshCw } from '@lucide/svelte';
 	import {
 		SettingsChatDesktopSidebar,
 		SettingsChatFields,
@@ -16,7 +16,7 @@
 		SETTINGS_SECTION_SLUGS
 	} from '$lib/constants';
 	import { ColorMode } from '$lib/enums/ui.enums';
-	import { modelsStore, serverStore, settingsStore } from '$lib/stores';
+	import { authStore, modelsStore, serverStore, settingsStore } from '$lib/stores';
 	import type { SettingsSection, SettingsSectionTitle } from '$lib/types';
 	import { setMode } from 'mode-watcher';
 	import { fade } from 'svelte/transition';
@@ -161,6 +161,22 @@
 							/>
 
 							{#if currentSection.slug === SETTINGS_SECTION_SLUGS.GENERAL}
+								<div class="flex flex-col gap-3 rounded-lg border border-border/40 bg-card/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+									<div class="min-w-0">
+										<p class="truncate text-sm font-medium">
+											{authStore.user?.username ?? 'Signed in'}
+										</p>
+										<p class="truncate text-xs text-muted-foreground">
+											{authStore.user?.role ?? 'authenticated'}
+										</p>
+									</div>
+
+									<Button onclick={() => authStore.logout()} size="sm" variant="outline">
+										<LogOut class="h-3 w-3" />
+										Sign out
+									</Button>
+								</div>
+
 								<div class="flex justify-end">
 									<Button onclick={() => window.location.reload()} variant="outline">
 										<RefreshCw class="h-3 w-3" />

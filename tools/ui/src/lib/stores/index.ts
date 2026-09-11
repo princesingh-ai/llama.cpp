@@ -20,6 +20,8 @@
 // CHAT / MESSAGING
 export { chatStore } from './chat/index.svelte';
 
+export { authStore } from './auth.svelte';
+
 export { draftMessagesStore } from './chat/drafts.svelte';
 
 // CONVERSATION TABS
