@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
-	import { LoginScreen, SidebarNavigation } from '$lib/components/app';
+	import { SidebarNavigation } from '$lib/components/app';
 	import { PwaMetaTags, PwaRefreshAlert } from '$lib/components/pwa';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import {
@@ -56,6 +56,11 @@
 	let showBuildVersion = $derived(
 		settingsStore.config[SETTINGS_KEYS.SHOW_BUILD_VERSION] as boolean
 	);
+	let isLoginRoute = $derived(page.route.id === '/login');
+	let canRenderProtectedApp = $derived(authStore.isAuthenticated && !isLoginRoute);
+	let canRenderPublicRoute = $derived(!authStore.isAuthenticated && isLoginRoute);
+	const loginPath = `${base}/login`;
+	const homePath = `${base}/`;
 
 	// Keep the hook object intact: destructuring needRefreshByStorage reads the getter once and freezes it
 	const pwa = usePwa();
@@ -137,6 +142,24 @@
 		if (id !== prev && prev && settingsStore.config.conversationTabs && prev === NEW_CHAT_TAB_ID) {
 			untrack(() => tabsStore.removeTabs([NEW_CHAT_TAB_ID]));
 		}
+	});
+
+	$effect(() => {
+		if (!browser || authStore.isChecking) return;
+
+		const target = !authStore.isAuthenticated
+			? isLoginRoute
+				? null
+				: loginPath
+			: isLoginRoute
+				? homePath
+				: null;
+
+		if (!target || page.url.pathname === target) return;
+
+		untrack(() => {
+			void goto(target, { replaceState: true });
+		});
 	});
 	// Global keyboard shortcuts
 	const { handleKeydown } = useKeyboardShortcuts({
@@ -346,9 +369,7 @@
 		<main class="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">
 			<span class="shimmer-text">Loading Snap</span>
 		</main>
-	{:else if !authStore.isAuthenticated}
-		<LoginScreen />
-	{:else}
+	{:else if canRenderProtectedApp}
 		<div class="flex flex-col md:flex-row">
 			<SidebarNavigation
 				onSearchClick={() => {
@@ -364,6 +385,12 @@
 				{@render children?.()}
 			</div>
 		</div>
+	{:else if canRenderPublicRoute}
+		{@render children?.()}
+	{:else}
+		<main class="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">
+			<span class="shimmer-text">Loading Snap</span>
+		</main>
 	{/if}
 
 	<ModeWatcher />

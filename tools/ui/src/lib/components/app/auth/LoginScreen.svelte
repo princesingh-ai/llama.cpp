@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { LoaderCircle } from '@lucide/svelte';
+	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { Logo } from '$lib/components/app/misc';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import { Button } from '$lib/components/ui/button';
@@ -25,6 +27,7 @@
 
 		try {
 			await authStore.login(username.trim(), password);
+			await goto(`${base}/`, { replaceState: true });
 		} catch {
 			localError = authStore.error ?? 'Invalid username or password.';
 		} finally {
